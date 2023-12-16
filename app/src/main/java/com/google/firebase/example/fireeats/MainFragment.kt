@@ -25,6 +25,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.example.fireeats.databinding.FragmentMainBinding
 import com.google.firebase.example.fireeats.adapter.RestaurantAdapter
 import com.google.firebase.example.fireeats.model.Restaurant
+import com.google.firebase.example.fireeats.util.RestaurantUtil
 import com.google.firebase.example.fireeats.viewmodel.MainActivityViewModel
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
@@ -70,6 +71,12 @@ class MainFragment : Fragment(),
 
         // Firestore
         firestore = Firebase.firestore
+        firestore.useEmulator("10.0.2.2", 8080)
+
+        // Get the 50 highest rated restaurants
+        query = firestore.collection("restaurants")
+            .orderBy("avgRating", Query.Direction.DESCENDING)
+            .limit(LIMIT.toLong())
 
         // RecyclerView
         query?.let {
@@ -177,8 +184,36 @@ class MainFragment : Fragment(),
         findNavController().navigate(action)
     }
 
-    override fun onFilter(filters: Filters) {
-        // TODO(developer): Construct new query
+    override fun onFilter(filters: Filters)
+    {
+        // Construct query basic query
+        var query: Query = firestore.collection("restaurants")
+
+        // Category (equality filter)
+        if (filters.hasCategory()) {
+            query = query.whereEqualTo(Restaurant.FIELD_CATEGORY, filters.category)
+        }
+
+        // City (equality filter)
+        if (filters.hasCity()) {
+            query = query.whereEqualTo(Restaurant.FIELD_CITY, filters.city)
+        }
+
+        // Price (equality filter)
+        if (filters.hasPrice()) {
+            query = query.whereEqualTo(Restaurant.FIELD_PRICE, filters.price)
+        }
+
+        // Sort by (orderBy with direction)
+        if (filters.hasSortBy()) {
+            query = query.orderBy(filters.sortBy.toString(), filters.sortDirection)
+        }
+
+        // Limit items
+        query = query.limit(LIMIT.toLong())
+
+        // Update the query
+        adapter?.setQuery(query)
 
         // Set header
         binding.textCurrentSearch.text = HtmlCompat.fromHtml(
@@ -206,8 +241,16 @@ class MainFragment : Fragment(),
         viewModel.isSigningIn = true
     }
 
-    private fun onAddItemsClicked() {
-        // TODO(developer): Add random restaurants
+    private fun onAddItemsClicked()
+    {
+        val restaurantsRef = firestore.collection("restaurants")
+        for (i in 0..9) {
+            // Create random restaurant / ratings
+            val randomRestaurant = RestaurantUtil.getRandom(requireContext())
+
+            // Add restaurant
+            restaurantsRef.add(randomRestaurant)
+        }
         showTodoToast()
     }
 

@@ -21,6 +21,9 @@
         <argument
             android:name="key_restaurant_id"
             app:argType="string" />
+        <action
+            android:id="@+id/action_RestaurantDetailFragment_to_MainFragment"
+            app:destination="@id/MainFragment" />
     </fragment>
 
 </navigation>
